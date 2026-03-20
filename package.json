@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "relay:udp": "node scripts/ws-udp-relay-minimal.js",
+    "relay:tcp": "node scripts/ws-tcp-relay-minimal.js",
+    "relay:enhanced": "node scripts/relay-server-enhanced.mjs",
+    "relay:dev": "DEBUG=true node scripts/relay-server-enhanced.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

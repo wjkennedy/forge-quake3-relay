@@ -4,11 +4,11 @@ Get the Quake 3 relay server running locally in minutes.
 
 ## Prerequisites
 
-- Docker and Docker Compose installed
+- Docker and Docker Compose installed (for Option 1)
 - Node.js 18+ (for local development)
-- ~2GB free disk space (for ioquake3 build)
+- ~2GB free disk space (for ioquake3 build in Docker)
 
-## Option 1: Docker Compose (Fastest)
+## Option 1: Docker Compose (Easiest - Full Stack)
 
 ```bash
 # Clone the project and navigate to it
@@ -17,18 +17,43 @@ cd /path/to/quake3-relay
 # Start both relay and ioquake3 server
 docker-compose up --build
 
-# Output:
-# [+] Running 2/2
-#  ✔ Network quake3-relay_quake3-network Created
-#  ✔ Container quake3-server                    Created
-#  ✔ Container quake3-relay                     Created
-# quake3-relay  | [relay] Quake 3 Relay Server starting...
-# quake3-relay  | [relay] WebSocket: ws://0.0.0.0:8080
+# Output shows relay running on ws://localhost:8080
 ```
 
-The relay is now running at `ws://localhost:8080`
+The relay is now running at `ws://localhost:8080` with ioquake3 server at `localhost:27960`.
 
-## Option 2: Local Node.js Development
+## Option 2: Minimal Relay (Standalone - No Docker)
+
+Fast setup using the production-proven minimal relay from q3js.
+
+### 2a. UDP Relay (Quake 3)
+```bash
+# Install ws dependency
+npm install
+
+# Run minimal UDP relay
+TARGET_HOST=127.0.0.1 TARGET_PORT=27960 PROXY_PORT=8080 npm run relay:udp
+```
+
+### 2b. Enhanced Relay (with metrics)
+```bash
+# Install ws dependency
+npm install
+
+# Run with debug logging
+npm run relay:dev
+
+# Run production (clean output)
+npm run relay:enhanced
+```
+
+Both expose `/healthz` endpoint:
+```bash
+curl http://localhost:8080/healthz
+# Returns active connections, bytes in/out, target info
+```
+
+## Option 3: Local Node.js Development (Full TypeScript)
 
 ```bash
 # Install dependencies
@@ -42,11 +67,6 @@ export RELAY_WS_PORT=8080
 
 # Start relay server
 npx ts-node scripts/relay-server.ts
-
-# Output:
-# [relay] Quake 3 Relay Server starting...
-# [relay] WebSocket: ws://0.0.0.0:8080
-# [relay] Game Server: localhost:27960
 ```
 
 ## Test the Connection
