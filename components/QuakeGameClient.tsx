@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
  * Demonstrates how to use the relay client in a Forge app
  */
 export function QuakeGameClient() {
+  const [mounted, setMounted] = useState(false);
   const relayServerUrl = process.env.NEXT_PUBLIC_RELAY_SERVER_URL || 'ws://localhost:8080';
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<{
@@ -18,9 +19,14 @@ export function QuakeGameClient() {
     fraglimit: number;
   }>({
     isRunning: false,
-    playerName: `Player_${Math.random().toString(36).substring(7)}`,
+    playerName: '',
     fraglimit: 0,
   });
+
+  // Mark component as mounted (client-side only)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Initialize relay client
   const { connected, clientId, error, connecting, sendPacket, on, isConnected, stats } =
@@ -28,6 +34,14 @@ export function QuakeGameClient() {
       debug: true,
       autoReconnect: true,
     });
+
+  // Generate player name on mount (after hydration)
+  useEffect(() => {
+    setGameState((prev) => ({
+      ...prev,
+      playerName: `Player_${Math.random().toString(36).substring(7)}`,
+    }));
+  }, []);
 
   // Set up event handlers
   useEffect(() => {
@@ -87,6 +101,12 @@ export function QuakeGameClient() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 space-y-4">
+      {!mounted ? (
+        <div className="flex items-center justify-center p-8">
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      ) : (
+        <>
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Quake 3 Relay Client</h1>
@@ -240,6 +260,8 @@ export function QuakeGameClient() {
           </ol>
         </div>
       </Card>
+        </>
+      )}
     </div>
   );
 }
