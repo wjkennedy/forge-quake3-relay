@@ -10,11 +10,21 @@ RUN apt-get update && apt-get install -y \
     wget \
     netcat-openbsd \
     net-tools \
+    libsdl2-dev \
+    libcurl4-openssl-dev \
+    libgl1-mesa-dev \
+    libopusfile-dev \
+    libopus-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone and build ioquake3
-RUN git clone https://github.com/ioquake/ioq3 . && \
-    make -j$(nproc) PLATFORM=linux ARCH=x86_64 SKIP_RENDERER=1
+RUN git clone --depth 1 https://github.com/ioquake/ioq3 . && \
+    make -j$(nproc) PLATFORM=linux ARCH=x86_64 SKIP_RENDERER=1 USE_CODEC_OPUS=1 2>&1 | tee build.log && \
+    if [ ! -f build/release-linux-x86_64/ioquake3.x86_64 ]; then \
+      echo "ERROR: Build failed, check build.log"; \
+      cat build.log; \
+      exit 1; \
+    fi
 
 # Copy server configuration
 COPY server.cfg ./baseq3/
