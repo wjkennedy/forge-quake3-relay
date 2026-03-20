@@ -2,51 +2,37 @@ FROM debian:bookworm-slim
 
 WORKDIR /opt/ioquake3
 
-# Install dependencies and build tools
+# Install runtime dependencies only (much smaller and faster)
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    git \
-    curl \
-    wget \
+    libsdl2-2.0-0 \
+    libcurl4 \
+    libgl1-mesa-glx \
+    libopus0 \
+    libopusfile0 \
     netcat-openbsd \
-    net-tools \
-    libsdl2-dev \
-    libcurl4-openssl-dev \
-    libgl1-mesa-dev \
-    libopusfile-dev \
-    libopus-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone and build ioquake3
-RUN git clone --depth 1 https://github.com/ioquake/ioq3 . && \
-    make -j$(nproc) PLATFORM=linux ARCH=x86_64 SKIP_RENDERER=1 USE_CODEC_OPUS=1 2>&1 | tee build.log && \
-    if [ ! -f build/release-linux-x86_64/ioquake3.x86_64 ]; then \
-      echo "ERROR: Build failed, check build.log"; \
-      cat build.log; \
-      exit 1; \
-    fi
+# Download pre-compiled ioquake3 binary
+RUN apt-get update && apt-get install -y wget && \
+    wget -q https://ioquake3.org/files/ioquake3-latest/ioquake3-latest-linux.tar.bz2 -O ioquake3.tar.bz2 && \
+    tar xjf ioquake3.tar.bz2 && \
+    rm ioquake3.tar.bz2 && \
+    find . -name "ioquake3*" -o -name "ioq3ded*" | head -1 | xargs chmod +x && \
+    apt-get remove -y wget && rm -rf /var/lib/apt/lists/*
 
 # Copy server configuration
-COPY server.cfg ./baseq3/
+COPY server.cfg ./baseq3/ 2>/dev/null || true
 
 # Create necessary directories
-RUN mkdir -p baseq3 && \
-    chmod +x ./build/release-linux-x86_64/ioquake3.x86_64
-
-# Download demo maps if they don't exist
-RUN if [ ! -f baseq3/pak0.pk3 ]; then \
-    echo "Note: pak0.pk3 (base game data) not included. You need to provide this file." \
-    && echo "Download from: https://www.quake3world.com/files/Q3%20demos%20and%20utils/" \
-    && echo "Or use shareware demo files."; \
-    fi
+RUN mkdir -p baseq3
 
 # Expose game port
 EXPOSE 27960/udp
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+# Health check - verify server port is listening
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD nc -zu localhost 27960 || exit 1
 
-# Start server
-ENTRYPOINT ["./build/release-linux-x86_64/ioquake3.x86_64", "+set", "dedicated", "2"]
-CMD ["+set", "net_port", "27960", "+exec", "baseq3/server.cfg"]
+# Start server - find the executable and run it
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["exec $(find . -name 'ioquake3*' -o -name 'ioq3ded*' | head -1) +set dedicated 2 +set net_port 27960 +exec baseq3/server.cfg"]
