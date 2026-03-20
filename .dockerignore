@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+build
+dist
+.next
+.git
+.gitignore
+README.md
+README_RELAY.md
+QUICKSTART.md
+.env
+.env.local
+.env.*.local
+.DS_Store
+*.pem
+*.key

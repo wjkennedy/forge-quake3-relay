@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # ioquake3 game server
+  ioquake3:
+    build:
+      context: ./docker/ioquake3
+      dockerfile: Dockerfile
+    container_name: quake3-server
+    ports:
+      - "27960:27960/udp"  # Game port
+      - "27961:27961/tcp"  # Console port (if enabled)
+    environment:
+      - GAME_PORT=27960
+      - GAME_SERVER_NAME=Relay Test Server
+      - GAME_SERVER_PASSWORD=
+      - MAX_PLAYERS=16
+      - FRAGLIMIT=0
+      - TIMELIMIT=0
+      - MAP_ROTATION=q3dm1,q3dm6,q3dm13
+    volumes:
+      - ./docker/ioquake3/server.cfg:/opt/ioquake3/baseq3/server.cfg
+    networks:
+      - quake3-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "netstat", "-an", "|", "grep", "27960"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Quake 3 WebSocket-to-UDP relay
+  relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quake3-relay
+    ports:
+      - "8080:8080"  # WebSocket port
+    environment:
+      - RELAY_WS_PORT=8080
+      - RELAY_HOST=0.0.0.0
+      - GAME_SERVER_HOST=ioquake3
+      - GAME_SERVER_PORT=27960
+      - MAX_CLIENTS=64
+      - HEARTBEAT_INTERVAL=30000
+      - DEBUG=true
+    depends_on:
+      ioquake3:
+        condition: service_healthy
+    networks:
+      - quake3-network
+    restart: unless-stopped
+
+networks:
+  quake3-network:
+    driver: bridge
