@@ -8,8 +8,8 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     wget \
-    netcat-traditional \
-    netstat-deprecated \
+    netcat-openbsd \
+    net-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone and build ioquake3
@@ -35,7 +35,7 @@ EXPOSE 27960/udp
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD netstat -an | grep 27960 || exit 1
+  CMD nc -zu localhost 27960 || exit 1
 
 # Start server
 ENTRYPOINT ["./build/release-linux-x86_64/ioquake3.x86_64", "+set", "dedicated", "2"]
