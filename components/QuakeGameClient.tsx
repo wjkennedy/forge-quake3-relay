@@ -37,11 +37,13 @@ export function QuakeGameClient() {
 
   // Generate player name on mount (after hydration)
   useEffect(() => {
-    setGameState((prev) => ({
-      ...prev,
-      playerName: `Player_${Math.random().toString(36).substring(7)}`,
-    }));
-  }, []);
+    if (mounted) {
+      setGameState((prev) => ({
+        ...prev,
+        playerName: `Player_${Math.random().toString(36).substring(7)}`,
+      }));
+    }
+  }, [mounted]);
 
   // Set up event handlers
   useEffect(() => {
@@ -152,7 +154,7 @@ export function QuakeGameClient() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <span className="text-gray-600">Player Name:</span>
-              <p className="font-mono">{gameState.playerName}</p>
+              <p className="font-mono">{gameState.playerName || 'Loading...'}</p>
             </div>
             <div>
               <span className="text-gray-600">Status:</span>
