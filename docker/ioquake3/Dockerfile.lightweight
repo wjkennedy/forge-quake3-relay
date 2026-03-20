@@ -1,0 +1,47 @@
+FROM debian:bookworm-slim
+
+WORKDIR /opt/ioquake3
+
+# Install runtime dependencies only (much lighter)
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    netcat-openbsd \
+    net-tools \
+    libsdl2-2.0-0 \
+    libcurl4 \
+    libgl1-mesa-glx \
+    libopus0 \
+    libopusfile0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download pre-built ioquake3 binary
+# Note: You may need to replace this URL with a reliable source of pre-built binaries
+# For development, you can also mount a local binary via Docker volume
+RUN echo "Downloading ioquake3 server binary..." && \
+    mkdir -p build/release-linux-x86_64 && \
+    # Using the ioq3 releases if available, or fallback to manual setup
+    wget -q -O build/release-linux-x86_64/ioquake3.x86_64 \
+      "https://github.com/ioquake/ioq3/releases/download/last-good-build/ioquake3.x86_64" 2>/dev/null || \
+    echo "Warning: Pre-built binary not available. You can:" && \
+    echo "  1. Build on your machine and copy the binary" && \
+    echo "  2. Use docker-compose volumes to mount the binary" && \
+    echo "  3. Use the full Dockerfile with source build"
+
+# Copy server configuration
+COPY server.cfg ./baseq3/ 2>/dev/null || echo "server.cfg not found"
+
+# Create necessary directories
+RUN mkdir -p baseq3 && \
+    chmod +x ./build/release-linux-x86_64/ioquake3.x86_64 2>/dev/null || true
+
+# Expose game port
+EXPOSE 27960/udp
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD nc -zu localhost 27960 || exit 1
+
+# Start server
+ENTRYPOINT ["./build/release-linux-x86_64/ioquake3.x86_64", "+set", "dedicated", "2"]
+CMD ["+set", "net_port", "27960", "+exec", "baseq3/server.cfg"]
