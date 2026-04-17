@@ -2,6 +2,8 @@
 
 A Node.js-based relay server that bridges WebSocket connections from browser WASM Quake 3 clients to ioquake3 UDP game servers. Enables multiplayer Quake 3 gameplay from multiple Jira instances through a persistent relay connection.
 
+![grab.png](grab.png)
+
 ## Quick Start
 
 ### 1. Start with Docker Compose
