@@ -99,6 +99,8 @@ npx ts-node scripts/relay-server.ts
 
 ### Option 2: Docker (Recommended)
 
+![docker-grab.png](docker-grab.png)
+
 ```bash
 # Build image
 docker build -t quake3-relay .
