@@ -13,7 +13,7 @@ A Node.js-based relay server that bridges WebSocket connections from browser WAS
 docker-compose up --build
 
 # In another terminal, check relay is running
-curl http://localhost:8080/
+curl http://localhost:8000
 ```
 
 ### 2. Connect a Client
@@ -22,7 +22,7 @@ curl http://localhost:8080/
 import { QuakeRelayClient } from './lib/quake-ws-client';
 
 const client = new QuakeRelayClient({
-  serverUrl: 'ws://localhost:8080',
+  serverUrl: 'ws://localhost:8000',
   debug: true,
 });
 
@@ -67,7 +67,7 @@ client.on('data', (packet) => {
 
 ```bash
 # Relay server port
-RELAY_WS_PORT=8080
+RELAY_WS_PORT=8000
 
 # Bind address
 RELAY_HOST=0.0.0.0
@@ -106,7 +106,7 @@ npx ts-node scripts/relay-server.ts
 docker build -t quake3-relay .
 
 # Run container
-docker run -p 8080:8080 \
+docker run -p 8000:8000 \
   -e GAME_SERVER_HOST=your-game-server \
   -e GAME_SERVER_PORT=27960 \
   quake3-relay
@@ -269,7 +269,7 @@ Output:
 
 ```bash
 # Check if relay is responding
-curl -i http://localhost:8080/
+curl -i http://localhost:8000/
 
 # Monitor with nc
 nc -u localhost 27960
@@ -285,22 +285,22 @@ ps aux | grep relay
 top -p $(pgrep -f relay-server.ts)
 
 # Monitor network
-netstat -an | grep 8080
+netstat -an | grep 8000
 ```
 
 ## Troubleshooting
 
 ### Relay won't start
 
-1. Check port 8080 is available: `netstat -an | grep 8080`
+1. Check port 8000 is available: `netstat -an | grep 8000`
 2. Check game server is reachable: `nc -u GAME_SERVER_HOST GAME_SERVER_PORT`
 3. Check environment variables: `echo $RELAY_WS_PORT`
 4. Check logs: `DEBUG=true node relay-server.ts`
 
 ### Client can't connect
 
-1. Check relay is running: `netstat -an | grep LISTEN | grep 8080`
-2. Check firewall: `ufw allow 8080`
+1. Check relay is running: `netstat -an | grep LISTEN | grep 8000`
+2. Check firewall: `ufw allow 8000`
 3. Check WebSocket URL is correct
 4. Check browser console for errors
 
