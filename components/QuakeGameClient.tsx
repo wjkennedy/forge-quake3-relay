@@ -29,7 +29,7 @@ export function QuakeGameClient() {
   }, []);
 
   // Initialize relay client
-  const { connected, clientId, error, connecting, sendPacket, on, isConnected, stats } =
+  const { connected, clientId, error, connecting, connect, sendPacket, on, isConnected, stats } =
     useQuakeRelay(relayServerUrl, {
       debug: true,
       autoReconnect: true,
@@ -72,6 +72,12 @@ export function QuakeGameClient() {
     });
   }, [on]);
 
+  useEffect(() => {
+    if (mounted) {
+      connect();
+    }
+  }, [mounted, connect]);
+
   // Simulate sending a game packet
   const handleSendTestPacket = () => {
     if (!isConnected()) {
@@ -79,9 +85,10 @@ export function QuakeGameClient() {
       return;
     }
 
-    // Create a dummy Quake 3 packet for testing
-    // Real packets come from the WASM client
-    const packet = new Uint8Array([0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01]);
+    const packet = new Uint8Array([
+      0xff, 0xff, 0xff, 0xff,
+      ...new TextEncoder().encode('getstatus\n'),
+    ]);
     sendPacket(packet);
     console.log('[game] Sent test packet');
   };

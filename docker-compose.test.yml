@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Lightweight UDP echo target for relay tests
+  udp-echo:
+    image: node:20-alpine
+    container_name: quake3-udp-echo
+    working_dir: /app
+    volumes:
+      - ./scripts:/app/scripts
+      - ./node_modules:/app/node_modules
+    command: node scripts/udp-echo-server.mjs
+    environment:
+      - ECHO_PORT=27960
+    networks:
+      - quake3-network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -zu localhost 27960 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 2s
+
+  # Quake 3 mock server (responds to getstatus/getinfo)
+  q3-mock:
+    image: node:20-alpine
+    container_name: quake3-q3-mock
+    working_dir: /app
+    volumes:
+      - ./scripts:/app/scripts
+      - ./node_modules:/app/node_modules
+    command: node scripts/q3-mock-server.mjs
+    environment:
+      - Q3MOCK_PORT=27960
+    networks:
+      - quake3-network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -zu localhost 27960 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 2s
+
+  # Override relay to target udp-echo for tests
+  relay:
+    environment:
+      - TARGET_HOST=udp-echo
+      - TARGET_PORT=27960
+      - PROXY_PORT=8080
+      - PROXY_HOST=0.0.0.0
+      - DEBUG=true
+    depends_on:
+      - udp-echo
+
+networks:
+  quake3-network:
+    driver: bridge

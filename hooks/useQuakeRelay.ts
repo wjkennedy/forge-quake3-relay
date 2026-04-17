@@ -100,7 +100,7 @@ export function useQuakeRelay(
         clientRef.current.disconnect();
       }
     };
-  }, [serverUrl, options]);
+  }, [serverUrl]);
 
   // Connect to relay server
   const connect = useCallback(async () => {

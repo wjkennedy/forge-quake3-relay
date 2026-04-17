@@ -3,14 +3,6 @@
  * Provides a simple interface for WASM Quake 3 clients to connect to the relay server
  */
 
-import {
-  RelayMessage,
-  serializeRelayMessage,
-  deserializeRelayMessage,
-  wrapQ3Packet,
-  unwrapQ3Packet,
-} from './quake-protocol';
-
 /**
  * Callback types for relay client events
  */
@@ -43,7 +35,6 @@ export class QuakeRelayClient {
   private reconnectTimer: NodeJS.Timeout | null = null;
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private lastHeartbeat: number = 0;
-  private messageQueue: RelayMessage[] = [];
 
   // Event callbacks
   private onConnect: OnConnectCallback | null = null;
@@ -94,10 +85,16 @@ export class QuakeRelayClient {
         this.log('Connecting to relay server:', this.config.serverUrl);
 
         this.ws = new WebSocket(this.config.serverUrl);
+        this.ws.binaryType = 'arraybuffer';
 
         this.ws.onopen = () => {
           this.log('WebSocket connected');
           this.reconnectAttempts = 0;
+          const cid = Math.random().toString(36).substring(2);
+          this.clientId = cid;
+          this.startHeartbeat();
+          this.emit('connect', cid);
+          resolve(cid);
         };
 
         this.ws.onmessage = (event: MessageEvent) => {
@@ -123,21 +120,6 @@ export class QuakeRelayClient {
           }
         };
 
-        // Wait for connection message
-        const timeout = setTimeout(() => {
-          reject(new Error('Connection timeout'));
-        }, 5000);
-
-        // Store the resolve function to use when we get the connection message
-        const originalOnConnect = this.onConnect;
-        this.onConnect = (cid: string) => {
-          clearTimeout(timeout);
-          this.clientId = cid;
-          this.startHeartbeat();
-          this.emit('connect', cid);
-          originalOnConnect?.(cid);
-          resolve(cid);
-        };
       } catch (error) {
         const errorMsg = `Failed to connect: ${error}`;
         this.log(errorMsg);
@@ -161,16 +143,6 @@ export class QuakeRelayClient {
     this.stopHeartbeat();
 
     if (this.ws) {
-      const message: RelayMessage = {
-        type: 'disconnect',
-        clientId: this.clientId || undefined,
-      };
-      try {
-        this.ws.send(serializeRelayMessage(message));
-      } catch (e) {
-        this.log('Failed to send disconnect message:', e);
-      }
-
       this.ws.close();
       this.ws = null;
     }
@@ -187,15 +159,8 @@ export class QuakeRelayClient {
       return;
     }
 
-    if (!this.clientId) {
-      this.log('Error: Client ID not set');
-      return;
-    }
-
     try {
-      const buffer = Buffer.from(data);
-      const message = wrapQ3Packet(buffer, this.clientId, 'data');
-      this.ws.send(serializeRelayMessage(message));
+      this.ws.send(data);
     } catch (error) {
       this.log('Error sending packet:', error);
       this.emit('error', `Failed to send packet: ${error}`);
@@ -205,41 +170,23 @@ export class QuakeRelayClient {
   /**
    * Handle incoming message from relay server
    */
-  private handleMessage(data: string): void {
+  private handleMessage(data: string | ArrayBuffer | Blob): void {
     try {
-      const message = deserializeRelayMessage(data);
+      this.lastHeartbeat = Date.now();
 
-      if (!message) {
-        this.log('Failed to parse message');
+      if (typeof data === 'string') {
+        this.emit('data', new TextEncoder().encode(data));
         return;
       }
 
-      this.lastHeartbeat = Date.now();
-
-      if (message.type === 'connect') {
-        // Connection acknowledgment
-        const cid = message.clientId || '';
-        this.log('Connected with client ID:', cid);
-        this.emit('connect', cid);
-      } else if (message.type === 'data') {
-        // Game packet data
-        const packetData = unwrapQ3Packet(message);
-
-        if (packetData) {
-          this.emit('data', new Uint8Array(packetData));
-        }
-      } else if (message.type === 'ping') {
-        // Respond to ping
-        const pongMessage: RelayMessage = {
-          type: 'pong',
-          clientId: this.clientId || undefined,
-          timestamp: Date.now(),
-        };
-        this.ws?.send(serializeRelayMessage(pongMessage));
-      } else if (message.type === 'error') {
-        this.log('Relay server error:', message.error);
-        this.emit('error', message.error || 'Unknown error');
+      if (data instanceof ArrayBuffer) {
+        this.emit('data', new Uint8Array(data));
+        return;
       }
+
+      data.arrayBuffer()
+        .then((buffer) => this.emit('data', new Uint8Array(buffer)))
+        .catch((error) => this.emit('error', `Failed to read packet: ${error}`));
     } catch (error) {
       this.log('Error handling message:', error);
     }

@@ -3,9 +3,10 @@ version: '3.8'
 services:
   # ioquake3 game server
   ioquake3:
-    build:
-      context: ./docker/ioquake3
-      dockerfile: Dockerfile
+    platform: linux/amd64
+    image: inanimate/quake3:loaded
+    volumes:
+      - ./server.cfg:/usr/share/games/quake3/baseq3/server.cfg:ro
     container_name: quake3-server
     ports:
       - "27960:27960/udp"  # Game port
@@ -15,7 +16,7 @@ services:
       - quake3-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "nc", "-zu", "localhost", "27960"]
+      test: ["CMD-SHELL", "ss -lun | grep -q ':27960'"]
       interval: 30s
       timeout: 10s
       start_period: 20s

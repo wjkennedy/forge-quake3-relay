@@ -1,0 +1,7 @@
+version: '3.8'
+
+services:
+  ioquake3:
+    volumes:
+      - ${IOQ3_BIN}:/opt/ioquake3/ioq3ded.x86_64:ro
+

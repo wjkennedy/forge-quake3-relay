@@ -10,7 +10,19 @@
     "relay:udp": "node scripts/ws-udp-relay-minimal.js",
     "relay:tcp": "node scripts/ws-tcp-relay-minimal.js",
     "relay:enhanced": "node scripts/relay-server-enhanced.mjs",
-    "relay:dev": "DEBUG=true node scripts/relay-server-enhanced.mjs"
+    "relay:dev": "DEBUG=true node scripts/relay-server-enhanced.mjs",
+    "test:e2e:up": "docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build udp-echo relay",
+    "test:e2e:run": "node tests/e2e/relay-echo.e2e.mjs",
+    "test:e2e:down": "docker compose -f docker-compose.yml -f docker-compose.test.yml down -v",
+    "test:e2e": "npm run test:e2e:up && npm run test:e2e:run && npm run test:e2e:down",
+    "test:e2e:q3mock:up": "docker compose -f docker-compose.yml -f docker-compose.test.yml -f docker-compose.q3mock.yml up -d --build q3-mock relay",
+    "test:e2e:q3mock:run": "node tests/e2e/quake3-status.e2e.mjs",
+    "test:e2e:q3mock:down": "docker compose -f docker-compose.yml -f docker-compose.test.yml down -v",
+    "test:e2e:q3mock": "npm run test:e2e:q3mock:up && npm run test:e2e:q3mock:run && npm run test:e2e:q3mock:down",
+    "test:e2e:q3:up": "docker compose up -d --build ioquake3 relay",
+    "test:e2e:q3:run": "node tests/e2e/quake3-status.e2e.mjs",
+    "test:e2e:q3:down": "docker compose down -v",
+    "test:e2e:q3": "npm run test:e2e:q3:up && npm run test:e2e:q3:run && npm run test:e2e:q3:down"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

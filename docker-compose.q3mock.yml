@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  relay:
+    environment:
+      - TARGET_HOST=q3-mock
+      - TARGET_PORT=27960
+
